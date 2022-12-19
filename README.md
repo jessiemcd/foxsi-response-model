@@ -15,13 +15,13 @@ the version which was used in the FOXSI ALS SPIE paper https://doi.org/10.1117/1
 https://hdl.handle.net/11299/241752.
 
 Calls to replicate examples used in SPIE paper:
-"""
+```
 ;Sources peak at strip CENTERS:
 response_modeling_2thresh, source='twosource', method='alssharing', erez='erez_on', edist='ALS_high', edge=0, iter=10, /fullplot
 
 ;Sources peak at strip EDGES:
 response_modeling_2thresh, source='twosource', method='alssharing', erez='erez_on', edist='ALS_high', edge=1, iter=10, /fullplot
-"""
+```
 
 **howditdo.pro** – How did it do? Simple, hardcoded method for comparing input sources and resulting sources (spatially) for the two examples 
 used in the SPIE paper. Fits peaks and compares their locations, amplitudes, widths. Also makes a little comparison plot for visual reference.
