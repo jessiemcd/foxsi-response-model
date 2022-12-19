@@ -79,6 +79,19 @@ END
 FUNCTION add_sharing_new, distribution=distribution, threshold=threshold, $
 			input_spectrum=input_spectrum, method=method, erez=erez, edist=edist, $
 			stripbins=stripbins, side=side, sec_threshold=sec_threshold
+			
+			
+	;PURPOSE: Takes spatial distribution of events (post optics convolution), adds photon
+	;			energies, and creates a list of simulated data frames (one per event).
+	;
+	;Steps:
+	;		–Creates input spectrum (event energies)
+	;		–Assigns each count in the input spatial distribution of events 
+	;		(distribution keyword) an energy.
+	;       –Applies charge sharing rules to redistribute energy to more than one strip based
+	;			on incident event location (includes use of theshold).
+	;		–Adds energy resolution if erez='erez_on'
+	;		–Returns a list of simulated data frames
 
 	ps = size(distribution)
 	
@@ -104,10 +117,15 @@ FUNCTION add_sharing_new, distribution=distribution, threshold=threshold, $
 	endif
 	
 	if edist EQ 'M1' then begin
-		flare = read_csv('m1_photon_list.csv') 
-		samples = flare.field1
-		ss = size(samples)
-		
+		result = FILE_TEST('m1_photon_list.csv')
+		if result EQ 0 then begin 
+			samples =  flare_spectrum()
+			ss = size(samples)
+		endif else begin
+			flare = read_csv('m1_photon_list.csv') 
+			samples = flare.field1
+			ss = size(samples)
+		endelse
 		;plot_hist, samples, bin=0.5
 	endif
 	
@@ -311,6 +329,10 @@ END
 ;========================================================================================
 
 FUNCTION process_frame_list, frame_list=frame_list
+
+	;Takes simulated FOXSI data frames and returns the observed spectrum and spatial
+	;distributions.
+
 	s = size(frame_list)
 
 	raw_spectrum=[]
@@ -341,17 +363,21 @@ END
 FUNCTION remove_sharing_new, frame_list=frame_list, method=method, erez=erez, $
 			threshold=threshold, sec_threshold=sec_threshold, $
 			stripbins=stripbins, side=side, siz=siz
-	;What do we want to do here?
-	
-	;Take the input frame list (1-2 registered strips with energies)
+			
+	;Take the simulated frame list (1-2 registered strips with energies)
 	;Revert back to 1 event per frame:
 		;- For single-strip events, randomly assign position within strip
-		;- For double-strip events, use (modified) expression from furukawa (2020) to
-		;	extract a position based on the two strips and two energies registered. 
+		;- For double-strip events, use some logic to extract a position based 
+		;   on the two strips and two energies registered. Method keyword defines how to
+		;	do this.
 		
-		;We should be back to the same number of above-threshold events we had originally 
-		; (we lose events where the total original energy is less than the threshold used in 
-		;	add_sharing). 
+	;Afterwards: we are back to the same number of above-threshold events we had originally 
+	; (we lose events where the total original energy is less than the threshold used in 
+	;	add_sharing). 
+	;
+	;Returns histogram spatial map, and saves output spectra to file
+	;        'saved_restored_spectrum.sav'
+
 
 	s = size(frame_list)
 	
@@ -545,43 +571,43 @@ END
 ;========================================================================================
 
 function PROB, y, xi, stripbins, sigma=sigma, PSF_FWHM=PSF_FWHM
-;(USING GAUSSIAN) - this is our optics PSF analogue.
-;For a single y value: probability that the measured source location will fall
-;into the interval (y, y+dy) when xi is the source location.
-;For an array of y values: returns array of same size (probability of each y).
-;Values in said array will sum to 1 if the source is located sufficiently far
-;from edges of y array, to less if not.
+	;(USING GAUSSIAN) - this is our optics PSF analogue.
+	;For a single y value: probability that the measured source location will fall
+	;into the interval (y, y+dy) when xi is the source location.
+	;For an array of y values: returns array of same size (probability of each y).
+	;Values in said array will sum to 1 if the source is located sufficiently far
+	;from edges of y array, to less if not.
 
-  if KEYWORD_SET(PSF_FWHM) then sigma = PSF_FWHM/2.355/10*stripbins
+	  if KEYWORD_SET(PSF_FWHM) then sigma = PSF_FWHM/2.355/10*stripbins
 
-  probb = (SQRT(2.*!PI)*sigma)^(-1)*EXP(-((y-xi)^2/(2.*sigma^2)))
-  ;probb = make_array(n_elements(y), val=1./n_elements(y))
-  return, probb
+	  probb = (SQRT(2.*!PI)*sigma)^(-1)*EXP(-((y-xi)^2/(2.*sigma^2)))
+	  ;probb = make_array(n_elements(y), val=1./n_elements(y))
+	  return, probb
 end
 
 
 
 function fancy_PROB, y, xi, stripbins
-;This is a better estimate of the optics PSF (still axially symmetric) based on parameters
-;sent by Milo to describe a fit to the actual measured PSF of a FOXSI optic (X7, a 10-shell
-;optic). 
-;For a single y value: probability that the measured source location will fall
-;into the interval (y, y+dy) when xi is the source location.
-;For an array of y values: returns array of same size (probability of each y).
-;Values in said array will sum to 1 if the source is located sufficiently far
-;from edges of y array, to less if not.
+	;This is a better estimate of the optics PSF (still axially symmetric) based on parameters
+	;sent by Milo to describe a fit to the actual measured PSF of a FOXSI optic (X7, a 10-shell
+	;optic). 
+	;For a single y value: probability that the measured source location will fall
+	;into the interval (y, y+dy) when xi is the source location.
+	;For an array of y values: returns array of same size (probability of each y).
+	;Values in said array will sum to 1 if the source is located sufficiently far
+	;from edges of y array, to less if not.
 
 
-A1 = 0.151
-A2 = 0.383
-A3 = 0.466
-S1 = 6.677/10*stripbins
-S2 = 1.111/10*stripbins
-S3 = 2.580/10*stripbins
+	A1 = 0.151
+	A2 = 0.383
+	A3 = 0.466
+	S1 = 6.677/10*stripbins
+	S2 = 1.111/10*stripbins
+	S3 = 2.580/10*stripbins
 
-probb = A1*(SQRT(2.*!PI)*S1)^(-1)*EXP(-((y-xi)^2/(2.*S1^2))) + $
-		A2*(SQRT(2.*!PI)*S2)^(-1)*EXP(-((y-xi)^2/(2.*S2^2))) + $
-		A3*(SQRT(2.*!PI)*S3)^(-1)*EXP(-((y-xi)^2/(2.*S3^2)))
+	probb = A1*(SQRT(2.*!PI)*S1)^(-1)*EXP(-((y-xi)^2/(2.*S1^2))) + $
+			A2*(SQRT(2.*!PI)*S2)^(-1)*EXP(-((y-xi)^2/(2.*S2^2))) + $
+			A3*(SQRT(2.*!PI)*S3)^(-1)*EXP(-((y-xi)^2/(2.*S3^2)))
   ;probb = make_array(n_elements(y), val=1./n_elements(y))
   return, probb
 end
@@ -593,8 +619,9 @@ end
 
 
 FUNCTION ogpsf, xis, xs, stripbins, PSF_FWHM=PSF_FWHM
-;ogpsf does the same thing as modpsf, except it does not include the
-;pixelization function, pixelize.
+;Makes PSF matrix (maps input coordinates to post-PSF-convolution coordinates)
+;Default behavior: use fancy_PROB for the PSF (simulate FOXSI optic
+;Alternative: set PSF_FWHM to a sigma value to use a pure gaussian PSF with that width).
 
   y = indgen(n_elements(xis))
   sigma=3.
@@ -625,7 +652,14 @@ END
 ;========================================================================================
 
 FUNCTION deconvolve_simple, data=data, iter=iter, og=og, matrix=matrix
+	;Takes in data and PSF matrix, and does richardson-lucy deconvolution
+	;Can set number of deconvolution intervals. 
+	;Input og allows for the original source map (before response modeling) to be used
+	; to evaluate the performance at each iteration (cross correlation computed, edit to print).
 	;Currently hardcoded for data, source to have the same dimensions
+
+	;Returns: list of resulting spatial arrays (per iteration). The last entry in each list 
+	;is actually the cross correlation result.
 
 	xis = findgen(n_elements(data))
 	xs = findgen(n_elements(data))
@@ -746,7 +780,7 @@ side = 'Al'
 ;						this is prepared)
 ;			uniform: uniform spectral distribution (random energies between 0-100 keV)
 ;
-; EDGE - are sources centered on the edges of strips or in their centers? (0=edge centers)
+; EDGE - are sources centered on the edges of strips or in their centers? (edge=0: sources centered at strip centers)
 ;
 ; STRIPS - how many strips to simulate
 ; STRIPBINS - how many bins per strip?
@@ -854,7 +888,7 @@ if source EQ 'twosource' then begin
 	  loc2 = 10.*stripbins
 	  if edge EQ 0 then BEGIN
 	  		loc1+=0.5*stripbins
-	  		loc2+=0.5**stripbins
+	  		loc2+=0.5*stripbins
 	  endif
 	  sigma1 = 1./10*stripbins
 	  sigma2 = 2./10*stripbins
@@ -1194,7 +1228,11 @@ if keyword_set(FULLPLOT) then begin
 	
 	result = toplot[indices]
 	ogsource = og_source[indices]
-	save, result, ogsource, filename='results_for_evaluation.sav'
+	
+	if edge EQ 0 then cenloc = 'center'
+	if edge EQ 1 then cenloc = 'edge'
+	
+	save, result, ogsource, filename='results_for_evaluation_'+source+'_'+method+'_'+erez+'_'+edist+'_'+cenloc+'.sav'
 
 	;===============================================================================
 	;===============================================================================

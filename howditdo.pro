@@ -4,11 +4,15 @@ pro howditdo
 ;Evaluating the success of the reconstruction process (post deconvolution - output from response_modeling)
 ;Somewhat hardcoded to examples from thesis
 
-restore, 'results_for_evaluation_edges_2thresh.sav'
+;files restored below are generated in response_modeling_2thresh.pro when /fullplot keyword is set.
+
+;restore, 'results_for_evaluation_edges_2thresh.sav'
+restore, 'results_for_evaluation_twosource_alssharing_erez_on_ALS_high_edge.sav'
 source1=ogsource - make_array(n_elements(ogsource), val=15.) 
 result1=result - make_array(n_elements(ogsource), val=15.) 
 
-restore, 'results_for_evaluation_centers_2thresh.sav'
+;restore, 'results_for_evaluation_centers_2thresh.sav'
+restore, 'results_for_evaluation_twosource_alssharing_erez_on_ALS_high_center.sav'
 source2=ogsource - make_array(n_elements(ogsource), val=15.) 
 result2=result - make_array(n_elements(ogsource), val=15.) 
 
@@ -165,23 +169,24 @@ for i=0, 3 do begin
 endfor
 
 print, 'Peaks: '
-print, sourcepeaks
-print, resultpeaks
-print, sourcepeaks-resultpeaks[0:1]
+print, 'Source: ', sourcepeaks
+print, 'Result: ', resultpeaks
+print, 'Differences (bin units): ', sourcepeaks-resultpeaks[0:1]
 
+print, ''
 print, 'Widths: '
-print, sourcewidths*2.355
-print, resultwidths*2.355
-print, (resultwidths[0:1]/sourcewidths)
+print, 'Source: ', sourcewidths*2.355
+print, 'Result: ', resultwidths*2.355
+print, 'Ratio (result/source): ', (resultwidths[0:1]/sourcewidths)
 ;print, sourcewidths
 ;print, resultwidths
 ;print, (sourcewidths-resultwidths)
 
-
+print, ''
 print, 'Amplitudes: '
-print, sourceamps*2.355
-print, resultamps*2.355
-print, (resultamps[0:1]/sourceamps)
+print, 'Source: ', sourceamps
+print, 'Result: ', resultamps
+print, 'Ratio (result/source): ', (resultamps[0:1]/sourceamps)
 print, 'Highest Artifact Amplitude: ', resultamps[2]/resultamps[1]
 
 
@@ -257,22 +262,35 @@ for i=0, 3 do begin
 	
 endfor
 
-print, 'Peaks: '
-print, sourcepeaks
-print, resultpeaks
-print, sourcepeaks-resultpeaks[0:1]
 
-print, 'Widths: '
-print, sourcewidths*2.355
-print, resultwidths*2.355
-print, (resultwidths[0:1]/sourcewidths)
 
 print, 'Amplitudes: '
 print, sourceamps*2.355
 print, resultamps*2.355
 print, (resultamps[0:1]/sourceamps)
 
+
+print, 'Peaks: '
+print, 'Source: ', sourcepeaks
+print, 'Result: ', resultpeaks
+print, 'Differences (bin units): ', sourcepeaks-resultpeaks[0:1]
+
+print, ''
+print, 'Widths: '
+print, 'Source: ', sourcewidths*2.355
+print, 'Result: ', resultwidths*2.355
+print, 'Ratio (result/source): ', (resultwidths[0:1]/sourcewidths)
+;print, sourcewidths
+;print, resultwidths
+;print, (sourcewidths-resultwidths)
+
+print, ''
+print, 'Amplitudes: '
+print, 'Source: ', sourceamps
+print, 'Result: ', resultamps
+print, 'Ratio (result/source): ', (resultamps[0:1]/sourceamps)
 print, 'Highest Artifact Amplitude: ', resultamps[2]/resultamps[1]
+
 
 ;===============================================================================
 ;===============================================================================
