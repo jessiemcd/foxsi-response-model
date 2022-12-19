@@ -17,7 +17,7 @@ https://hdl.handle.net/11299/241752.
 **howditdo.pro** – How did it do? Simple, hardcoded method for comparing input sources and resulting sources (spatially) for the two examples 
 used in the SPIE paper. Fits peaks and compares their locations, amplitudes, widths. Also makes a little comparison plot for visual reference.
 
-### Other IDL procedures
+### Note on some included IDL procedures NOT written by FOXSI team members
 
 **badpar.pro, lclxtrem.pro** – helpful utilities, Written by Marc W. Buie, Lowell Observatory. Included so you don't have to download the whole Buie library (here, if interested: https://www.boulder.swri.edu/~buie/idl/)
 
